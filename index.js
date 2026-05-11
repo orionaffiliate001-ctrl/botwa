@@ -44,15 +44,22 @@ const client =
 // QR
 // ======================
 
-client.on("qr", (qr) => {
+const QRCode =
+  require("qrcode")
 
-  console.log("SCAN QR")
+client.on(
+  "qr",
+  async (qr) => {
 
-  qrcode.generate(qr, {
-    small: true
-  })
+    console.log("SCAN QR")
 
-})
+    const url =
+      await QRCode.toDataURL(qr)
+
+    console.log(url)
+
+  }
+)
 
 // ======================
 // READY
