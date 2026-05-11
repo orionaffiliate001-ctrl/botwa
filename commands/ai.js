@@ -1,8 +1,7 @@
-const axios =
-  require("axios")
+const axios = require("axios")
 
 const personality =
-  require("../utils/personality")
+require("../utils/personality")
 
 const {
   loadMemory,
@@ -10,7 +9,7 @@ const {
 } = require("../utils/memory")
 
 const config =
-  require("../config")
+require("../config")
 
 async function aiCommand(
   message,
@@ -18,12 +17,12 @@ async function aiCommand(
 ) {
 
   const text =
-    message.body.trim()
+  message.body.trim()
 
   const lower =
-    text.toLowerCase()
+  text.toLowerCase()
 
-  // mention mode
+  // trigger
   if (
     !lower.includes(
       config.BOT_NAME
@@ -31,23 +30,23 @@ async function aiCommand(
   ) return
 
   const chat =
-    await message.getChat()
+  await message.getChat()
 
   const contact =
-    await message.getContact()
+  await message.getContact()
 
   const username =
-    contact.pushname ||
-    "orang"
+  contact.pushname ||
+  "orang"
 
-  chat.sendStateTyping()
+  await chat.sendStateTyping()
 
   // ======================
   // MEMORY
   // ======================
 
   let memory =
-    loadMemory()
+  loadMemory()
 
   if (!memory[username]) {
 
@@ -58,100 +57,108 @@ async function aiCommand(
   }
 
   memory[username]
-    .chats
-    .push(text)
+  .chats
+  .push(text)
 
   memory[username]
-    .chats =
-    memory[username]
-    .chats
-    .slice(-5)
+  .chats =
+  memory[username]
+  .chats
+  .slice(-5)
 
   saveMemory(memory)
 
   // ======================
-  // AI REQUEST
+  // CLEAN MESSAGE
+  // ======================
+
+  const cleanText =
+  text
+  .replace(
+    config.BOT_NAME,
+    ""
+  )
+  .trim()
+
+  // ======================
+  // AI
   // ======================
 
   try {
 
-    const prompt = `
-Nama user:
-${username}
-
-Memory:
-${memory[username]
-.chats.join("\n")}
-
-Pesan:
-${text}
-`
-
     const response =
-      await axios.post(
+    await axios.post(
 
-        "https://openrouter.ai/api/v1/chat/completions",
+      "https://openrouter.ai/api/v1/chat/completions",
 
-        {
+      {
 
-          model:
-            config.AI_MODEL,
+        model:
+        config.AI_MODEL,
 
-          messages: [
+        messages: [
 
-            {
-              role: "system",
-              content:
-                personality
-            },
+          {
+            role: "system",
+            content:
+            personality
+          },
 
-            {
-              role: "user",
-              content:
-                prompt
-            }
-
-          ]
-
-        },
-
-        {
-
-          headers: {
-
-            Authorization:
-              `Bearer ${config.API_KEY}`,
-
-            "HTTP-Referer":
-              "https://localhost",
-
-            "X-Title":
-              "TongkronganBot",
-
-            "Content-Type":
-              "application/json"
-
+          {
+            role: "user",
+            content:
+            cleanText
           }
+
+        ]
+
+      },
+
+      {
+
+        headers: {
+
+          Authorization:
+          `Bearer ${config.API_KEY}`,
+
+          "HTTP-Referer":
+          "https://localhost",
+
+          "X-Title":
+          "TongkronganBot",
+
+          "Content-Type":
+          "application/json"
 
         }
 
-      )
+      }
 
-    const reply =
-      response.data
-      .choices[0]
-      .message.content
+    )
 
-    message.reply(reply)
+    let reply =
+    response.data
+    .choices[0]
+    .message.content
+
+    // bersihin respon aneh
+    reply = reply
+    .replace(/sebagai ai/gi, "")
+    .replace(/aku ai/gi, "")
+    .replace(/chat sebelumnya/gi, "")
+    .replace(/pesan terbaru/gi, "")
+    .trim()
+
+    await message.reply(reply)
 
   } catch (err) {
 
     console.log(
-        err.response?.data ||
-        err.message
+      err.response?.data ||
+      err.message
     )
 
-    message.reply(
+    await message.reply(
       "otak gw ngefreeze 💀"
     )
 
