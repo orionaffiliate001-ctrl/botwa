@@ -18,36 +18,67 @@ const {
 const qrcode =
   require("qrcode-terminal")
 
-const chromium =
-  require("@sparticuz/chromium")
-
-const puppeteer =
-  require("puppeteer-core")
-
 const aiCommand =
   require("./commands/ai")
 
 async function startBot() {
 
-  const client =
-    new Client({
+  let client
 
-      puppeteer: {
+  // ======================
+  // RAILWAY MODE
+  // ======================
 
-        headless: true,
+  if (process.env.RAILWAY_ENVIRONMENT) {
 
-        executablePath:
-          await chromium.executablePath(),
+    const chromium =
+      require("@sparticuz/chromium")
 
-        args:
-          chromium.args,
+    client =
+      new Client({
 
-        defaultViewport:
-          chromium.defaultViewport
+        puppeteer: {
 
-      }
+          headless: true,
 
-    })
+          executablePath:
+            await chromium.executablePath(),
+
+          args:
+            chromium.args,
+
+          defaultViewport:
+            chromium.defaultViewport
+
+        }
+
+      })
+
+  }
+
+  // ======================
+  // LOCAL MODE
+  // ======================
+
+  else {
+
+    client =
+      new Client({
+
+        puppeteer: {
+
+          headless: true,
+
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox"
+          ]
+
+        }
+
+      })
+
+  }
 
   // ======================
   // QR
