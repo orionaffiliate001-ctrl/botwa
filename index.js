@@ -1,95 +1,140 @@
 require("dotenv").config()
 
-const { Client } =
-  require("whatsapp-web.js")
+const express =
+  require("express")
+
+const app = express()
+
+app.get("/", (req, res) => {
+  res.send("bot alive")
+})
+
+app.listen(3000)
+
+const {
+  Client
+} = require("whatsapp-web.js")
 
 const qrcode =
   require("qrcode-terminal")
 
+const chromium =
+  require("@sparticuz/chromium")
+
+const puppeteer =
+  require("puppeteer-core")
+
 const aiCommand =
   require("./commands/ai")
 
-const client =
-  new Client({
+async function startBot() {
 
-    puppeteer: {
+  const client =
+    new Client({
 
-      headless: true,
+      puppeteer: {
 
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox"
-      ]
+        headless: true,
 
-    }
+        executablePath:
+          await chromium.executablePath(),
+
+        args:
+          chromium.args,
+
+        defaultViewport:
+          chromium.defaultViewport
+
+      }
+
+    })
+
+  // ======================
+  // QR
+  // ======================
+
+  client.on("qr", (qr) => {
+
+    console.log("SCAN QR")
+
+    qrcode.generate(qr, {
+      small: true
+    })
 
   })
 
-// ======================
-// QR
-// ======================
+  // ======================
+  // READY
+  // ======================
 
-client.on("qr", (qr) => {
+  client.on("ready", () => {
 
-  console.log("SCAN QR")
+    console.log("BOT READY")
 
-  qrcode.generate(qr, {
-    small: true
   })
 
-})
+  // ======================
+  // DISCONNECTED
+  // ======================
 
-// ======================
-// READY
-// ======================
+  client.on(
+    "disconnected",
+    () => {
 
-client.on("ready", () => {
-
-  console.log("BOT READY")
-
-})
-
-// ======================
-// MESSAGE
-// ======================
-
-client.on(
-  "message",
-  async (message) => {
-
-    if (message.fromMe)
-      return
-
-    const text =
-      message.body.trim()
-
-    console.log(
-      "MSG:",
-      text
-    )
-
-    // ping
-    if (text === "!ping") {
-
-      message.reply(
-        "masih hidup bang 😭"
+      console.log(
+        "BOT DISCONNECTED"
       )
 
-      return
+      client.initialize()
 
     }
+  )
 
-    // AI
-    await aiCommand(
-      message,
-      client
-    )
+  // ======================
+  // MESSAGE
+  // ======================
 
-  }
-)
+  client.on(
+    "message",
+    async (message) => {
 
-// ======================
-// START
-// ======================
+      if (message.fromMe)
+        return
 
-client.initialize()
+      const text =
+        message.body.trim()
+
+      console.log(
+        "MSG:",
+        text
+      )
+
+      // ping
+      if (text === "!ping") {
+
+        message.reply(
+          "masih hidup bang 😭"
+        )
+
+        return
+
+      }
+
+      // AI
+      await aiCommand(
+        message,
+        client
+      )
+
+    }
+  )
+
+  // ======================
+  // START
+  // ======================
+
+  client.initialize()
+
+}
+
+startBot()
