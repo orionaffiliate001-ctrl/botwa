@@ -1,7 +1,7 @@
 require("dotenv").config()
 
 const express =
-  require("express")
+require("express")
 
 const app = express()
 
@@ -15,37 +15,43 @@ const {
   Client
 } = require("whatsapp-web.js")
 
-const qrcode =
-  require("qrcode-terminal")
+const QRCode =
+require("qrcode")
 
 const aiCommand =
-  require("./commands/ai")
+require("./commands/ai")
+
+const stickerCommand =
+require("./commands/sticker")
+
+const tiktokCommand =
+require("./commands/tiktok")
+
+const imageCommand =
+require("./commands/image")
 
 const client =
-  new Client({
+new Client({
 
-    puppeteer: {
+  puppeteer: {
 
-      headless: true,
+    headless: true,
 
-      executablePath:
-        "/usr/bin/chromium",
+    executablePath:
+    "/usr/bin/chromium",
 
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox"
-      ]
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ]
 
-    }
+  }
 
-  })
+})
 
 // ======================
 // QR
 // ======================
-
-const QRCode =
-  require("qrcode")
 
 client.on(
   "qr",
@@ -54,7 +60,7 @@ client.on(
     console.log("SCAN QR")
 
     const url =
-      await QRCode.toDataURL(qr)
+    await QRCode.toDataURL(qr)
 
     console.log(url)
 
@@ -65,11 +71,16 @@ client.on(
 // READY
 // ======================
 
-client.on("ready", () => {
+client.on(
+  "ready",
+  () => {
 
-  console.log("BOT READY")
+    console.log(
+      "BOT READY"
+    )
 
-})
+  }
+)
 
 // ======================
 // MESSAGE
@@ -79,26 +90,84 @@ client.on(
   "message",
   async (message) => {
 
-    if (message.fromMe)
-      return
+    if (
+      message.fromMe
+    ) return
 
     const text =
-      message.body.trim()
+    message.body.trim()
 
     console.log(
       "MSG:",
       text
     )
 
-    if (text === "!ping") {
+    // ======================
+    // PING
+    // ======================
 
-      message.reply(
+    if (
+      text === "!ping"
+    ) {
+
+      await message.reply(
         "masih hidup bang 😭"
       )
 
       return
 
     }
+
+    // ======================
+    // STICKER
+    // ======================
+
+    if (
+      text === "!sticker"
+    ) {
+
+      return stickerCommand(
+        message,
+        client
+      )
+
+    }
+
+    // ======================
+    // TIKTOK
+    // ======================
+
+    if (
+      text.startsWith("!tt ")
+    ) {
+
+      return tiktokCommand(
+        message,
+        client,
+        text
+      )
+
+    }
+
+    // ======================
+    // IMAGE AI
+    // ======================
+
+    if (
+      text.startsWith("!img ")
+    ) {
+
+      return imageCommand(
+        message,
+        client,
+        text
+      )
+
+    }
+
+    // ======================
+    // AI CHAT
+    // ======================
 
     await aiCommand(
       message,
