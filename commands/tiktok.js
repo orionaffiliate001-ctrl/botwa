@@ -1,6 +1,12 @@
 const axios =
 require("axios")
 
+const {
+  MessageMedia
+} = require(
+  "whatsapp-web.js"
+)
+
 async function tiktokCommand(
   message,
   client,
@@ -23,7 +29,6 @@ async function tiktokCommand(
     const url =
     args[1]
 
-    // API tiktok
     const api =
     `https://tikwm.com/api/?url=${encodeURIComponent(url)}`
 
@@ -43,34 +48,18 @@ async function tiktokCommand(
 
     }
 
-    const response =
-    await axios({
+    const media =
+    await MessageMedia
+    .fromUrl(
 
-      url:
       videoUrl,
 
-      method:
-      "GET",
+      {
+        unsafeMime: true,
+        filename: "tiktok.mp4"
+      }
 
-      responseType:
-      "arraybuffer",
-
-      timeout:
-      60000
-
-    })
-
-    const media = {
-
-      mimetype:
-      "video/mp4",
-
-      data:
-      Buffer
-      .from(response.data)
-      .toString("base64")
-
-    }
+    )
 
     await client.sendMessage(
 
@@ -80,7 +69,8 @@ async function tiktokCommand(
 
       {
         caption:
-        "nih bang 😭🔥"
+        "nih bang 😭🔥",
+        sendVideoAsGif: false
       }
 
     )
