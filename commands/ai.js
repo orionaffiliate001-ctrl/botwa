@@ -154,13 +154,16 @@ async function aiCommand(
   } catch (err) {
 
     console.log(
-      err.response?.data ||
-      err.message
-    )
+    JSON.stringify(
+      err.response?.data,
+      null,
+      2
+    ) || err.message)
 
     await message.reply(
       "otak gw ngefreeze 💀"
     )
+    console.log(err)
 
   }
 
