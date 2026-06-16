@@ -93,9 +93,14 @@ new Client({
       "--disable-accelerated-2d-canvas",
       "--no-first-run",
       "--no-zygote",
-      "--single-process",
       "--disable-gpu",
-      "--disable-features=LockProfile"
+      "--disable-features=LockProfile",
+      "--disable-software-rasterizer",
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-default-apps",
+      "--mute-audio",
+      "--hide-scrollbars"
     ]
   }
 
