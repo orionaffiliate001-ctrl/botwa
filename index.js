@@ -33,6 +33,9 @@ require("./commands/tiktok")
 const imageCommand =
 require("./commands/image")
 
+const instagramCommand =
+require("./commands/instagram")
+
 const client =
 new Client({
 
@@ -148,6 +151,22 @@ client.on(
     ) {
 
       return tiktokCommand(
+        message,
+        client,
+        text
+      )
+
+    }
+
+    // ======================
+    // INSTAGRAM
+    // ======================
+
+    if (
+      text.startsWith("!ig ")
+    ) {
+
+      return instagramCommand(
         message,
         client,
         text
