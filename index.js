@@ -83,6 +83,14 @@ new Client({
 
   authStrategy: new LocalAuth(),
 
+  // Fix: pakai versi WA Web yang stabil,
+  // bukan latest yang sering redirect/berubah
+  webVersionCache: {
+    type: "remote",
+    remotePath:
+    "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/%V.html"
+  },
+
   puppeteer: {
     headless: true,
     protocolTimeout: 90000,
