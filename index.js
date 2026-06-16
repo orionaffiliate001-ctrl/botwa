@@ -239,6 +239,18 @@ process.on("unhandledRejection", (reason) => {
     console.log("client.initialize() selesai")
   }).catch((err) => {
     console.error("client.initialize() GAGAL:", err.message)
+
+    // Hapus session_ok agar next restart mulai fresh
+    // (cegah loop crash dari session corrupt)
+    try {
+      if (fs.existsSync(SESSION_OK_FILE)) {
+        fs.unlinkSync(SESSION_OK_FILE)
+        console.log("session_ok dihapus, next restart akan scan QR ulang")
+      }
+    } catch (e) {
+      console.log("Gagal hapus session_ok:", e.message)
+    }
+
     process.exit(1)
   })
 
