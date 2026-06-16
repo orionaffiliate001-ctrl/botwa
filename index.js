@@ -40,26 +40,43 @@ const instagramCommand =
 require("./commands/instagram")
 
 // ======================
-// HAPUS SINGLETON LOCK
+// HAPUS SINGLETON LOCK (REKURSIF)
 // (fix Railway redeploy error)
 // ======================
 
-const lockPaths = [
-  path.join(".wwebjs_auth", "session", "SingletonLock"),
-  path.join(".wwebjs_auth", "session", "SingletonSocket"),
-  path.join(".wwebjs_auth", "session", "SingletonCookie")
+const LOCK_FILES = [
+  "SingletonLock",
+  "SingletonSocket",
+  "SingletonCookie"
 ]
 
-for (const lockFile of lockPaths) {
+function deleteLockFilesRecursive(dir) {
+  if (!fs.existsSync(dir)) return
   try {
-    if (fs.existsSync(lockFile)) {
-      fs.unlinkSync(lockFile)
-      console.log("Deleted lock file:", lockFile)
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        deleteLockFilesRecursive(fullPath)
+      } else if (LOCK_FILES.includes(entry.name)) {
+        try {
+          fs.unlinkSync(fullPath)
+          console.log("Deleted lock file:", fullPath)
+        } catch (e) {
+          console.log("Could not delete:", fullPath, e.message)
+        }
+      }
     }
   } catch (e) {
-    console.log("Could not delete lock file:", lockFile)
+    console.log("Error scanning dir:", dir, e.message)
   }
 }
+
+deleteLockFilesRecursive(
+  path.join(process.cwd(), ".wwebjs_auth")
+)
+
+console.log("Lock cleanup done, starting bot...")
 
 const client =
 new Client({
