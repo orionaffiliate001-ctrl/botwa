@@ -85,6 +85,7 @@ new Client({
 
   puppeteer: {
     headless: true,
+    protocolTimeout: 90000,
     executablePath: process.env.RAILWAY_ENVIRONMENT ? "/usr/bin/chromium" : undefined,
     args: [
       "--no-sandbox",
