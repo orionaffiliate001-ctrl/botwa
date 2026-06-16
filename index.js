@@ -1,5 +1,8 @@
 require("dotenv").config()
 
+const fs = require("fs")
+const path = require("path")
+
 const express = require("express")
 
 const app = express()
@@ -36,6 +39,28 @@ require("./commands/image")
 const instagramCommand =
 require("./commands/instagram")
 
+// ======================
+// HAPUS SINGLETON LOCK
+// (fix Railway redeploy error)
+// ======================
+
+const lockPaths = [
+  path.join(".wwebjs_auth", "session", "SingletonLock"),
+  path.join(".wwebjs_auth", "session", "SingletonSocket"),
+  path.join(".wwebjs_auth", "session", "SingletonCookie")
+]
+
+for (const lockFile of lockPaths) {
+  try {
+    if (fs.existsSync(lockFile)) {
+      fs.unlinkSync(lockFile)
+      console.log("Deleted lock file:", lockFile)
+    }
+  } catch (e) {
+    console.log("Could not delete lock file:", lockFile)
+  }
+}
+
 const client =
 new Client({
 
@@ -52,7 +77,8 @@ new Client({
       "--no-first-run",
       "--no-zygote",
       "--single-process",
-      "--disable-gpu"
+      "--disable-gpu",
+      "--disable-features=LockProfile"
     ]
   }
 
