@@ -8,15 +8,76 @@ const {
 )
 
 // ===================================
-// Cobalt instances (open-source, support IG)
-// POST / dengan body { url: "..." }
+// Helper: ekstrak shortcode dari URL IG
+// ===================================
+
+function extractShortcode(url) {
+  const match = url.match(
+    /instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/
+  )
+  return match ? match[2] : null
+}
+
+// ===================================
+// Method 1: Scrape Instagram Embed Page
+// (tidak butuh API pihak ketiga)
+// ===================================
+
+async function fetchFromIgEmbed(url) {
+
+  const shortcode = extractShortcode(url)
+  if (!shortcode) throw new Error("Shortcode tidak ditemukan")
+
+  const embedUrl =
+  `https://www.instagram.com/p/${shortcode}/embed/captioned/`
+
+  const res = await axios.get(embedUrl, {
+    headers: {
+      "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+      "AppleWebKit/537.36 (KHTML, like Gecko) " +
+      "Chrome/120.0.0.0 Safari/537.36",
+      "Accept":
+      "text/html,application/xhtml+xml," +
+      "application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Referer": "https://www.instagram.com/"
+    },
+    timeout: 15000
+  })
+
+  const html = res.data
+
+  // Coba ambil video URL
+  const videoMatch = html.match(/"video_url":"([^"]+)"/)
+  if (videoMatch) {
+    const videoUrl =
+    videoMatch[1].replace(/\\u0026/g, "&")
+    console.log("IG embed: video found")
+    return [{ url: videoUrl, type: "video" }]
+  }
+
+  // Coba ambil foto URL
+  const imageMatch = html.match(/"display_url":"([^"]+)"/)
+  if (imageMatch) {
+    const imageUrl =
+    imageMatch[1].replace(/\\u0026/g, "&")
+    console.log("IG embed: image found")
+    return [{ url: imageUrl, type: "image" }]
+  }
+
+  throw new Error("Tidak ada media di embed page")
+
+}
+
+// ===================================
+// Method 2: Cobalt instances (fallback)
 // ===================================
 
 const COBALT_INSTANCES = [
   "https://sunny.imput.net",
   "https://cobalt.api.timelessnesses.me",
-  "https://cobalt.nadeko.net",
-  "https://cobalt.perennialte.ch"
+  "https://cobalt.tools"
 ]
 
 async function fetchFromCobalt(url) {
@@ -37,13 +98,16 @@ async function fetchFromCobalt(url) {
             "Accept": "application/json",
             "Content-Type": "application/json"
           },
-          timeout: 12000
+          timeout: 10000,
+          // Abaikan SSL error pada instance yang pakai self-signed cert
+          httpsAgent: new (require("https").Agent)({
+            rejectUnauthorized: false
+          })
         }
       )
 
       const data = res.data
 
-      // status: stream / redirect / tunnel = 1 file langsung
       if (
         data.status === "stream" ||
         data.status === "redirect" ||
@@ -51,14 +115,12 @@ async function fetchFromCobalt(url) {
       ) {
         return [{
           url: data.url,
-          type: data.url &&
-            data.url.includes(".mp4")
-              ? "video"
-              : "image"
+          type: data.url && data.url.includes(".mp4")
+            ? "video"
+            : "image"
         }]
       }
 
-      // status: picker = multiple media (carousel)
       if (data.status === "picker") {
         return data.picker.map(item => ({
           url: item.url,
@@ -78,7 +140,7 @@ async function fetchFromCobalt(url) {
 }
 
 // ===================================
-// Main command
+// Main Command
 // ===================================
 
 async function instagramCommand(
@@ -111,15 +173,28 @@ async function instagramCommand(
 
     let medias = null
 
+    // Coba embed scraper dulu (paling reliable)
     try {
-      medias = await fetchFromCobalt(url)
+      console.log("Mencoba IG embed scraper...")
+      medias = await fetchFromIgEmbed(url)
     } catch (e) {
-      console.log("Semua Cobalt gagal:", e.message)
+      console.log("IG embed gagal:", e.message)
+    }
+
+    // Fallback ke Cobalt
+    if (!medias || medias.length === 0) {
+      try {
+        console.log("Mencoba Cobalt fallback...")
+        medias = await fetchFromCobalt(url)
+      } catch (e) {
+        console.log("Cobalt gagal:", e.message)
+      }
     }
 
     if (!medias || medias.length === 0) {
       return message.reply(
-        "gagal ambil konten ig 😭\npostingan mungkin private atau server lagi down"
+        "gagal ambil konten ig 😭\n" +
+        "postingan mungkin private atau tidak bisa diakses"
       )
     }
 
@@ -140,7 +215,15 @@ async function instagramCommand(
 
         const media = await MessageMedia.fromUrl(
           item.url,
-          { unsafeMime: true, filename }
+          {
+            unsafeMime: true,
+            filename,
+            headers: {
+              "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+              "AppleWebKit/537.36"
+            }
+          }
         )
 
         await client.sendMessage(
