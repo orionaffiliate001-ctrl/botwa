@@ -42,33 +42,6 @@ async function aiCommand(
   await chat.sendStateTyping()
 
   // ======================
-  // MEMORY
-  // ======================
-
-  let memory =
-  loadMemory()
-
-  if (!memory[username]) {
-
-    memory[username] = {
-      chats: []
-    }
-
-  }
-
-  memory[username]
-  .chats
-  .push(text)
-
-  memory[username]
-  .chats =
-  memory[username]
-  .chats
-  .slice(-5)
-
-  saveMemory(memory)
-
-  // ======================
   // CLEAN MESSAGE
   // ======================
 
@@ -79,6 +52,24 @@ async function aiCommand(
     ""
   )
   .trim()
+
+  const chatId = message.from
+
+  // Reset feature
+  if (cleanText.toLowerCase() === "reset") {
+    let memory = loadMemory()
+    delete memory[chatId]
+    saveMemory(memory)
+    await message.reply("memori chat room ini udah dihapus bang 🧼")
+    return
+  }
+
+  // ======================
+  // MEMORY
+  // ======================
+
+  let memory = loadMemory()
+  const history = memory[chatId] || []
 
   // ======================
   // AI
@@ -104,10 +95,11 @@ async function aiCommand(
             personality
           },
 
+          ...history,
+
           {
             role: "user",
-            content:
-            cleanText
+            content: `[${username}]: ${cleanText}`
           }
 
         ]
@@ -148,6 +140,26 @@ async function aiCommand(
     .replace(/chat sebelumnya/gi, "")
     .replace(/pesan terbaru/gi, "")
     .trim()
+
+    // Simpan ke memori setelah respon sukses didapatkan
+    if (!memory[chatId]) {
+      memory[chatId] = []
+    }
+
+    memory[chatId].push(
+      {
+        role: "user",
+        content: `[${username}]: ${cleanText}`
+      },
+      {
+        role: "assistant",
+        content: reply
+      }
+    )
+
+    // Batasi maksimum 10 pesan (5 percakapan dua arah)
+    memory[chatId] = memory[chatId].slice(-10)
+    saveMemory(memory)
 
     await message.reply(reply)
 
