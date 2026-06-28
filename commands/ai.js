@@ -87,8 +87,6 @@ async function aiCommand(
         model:
         config.AI_MODEL,
 
-        max_tokens: 1000,
-
         messages: [
 
           {
